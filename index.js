@@ -1,19 +1,17 @@
+
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const OpenAI = require('openai');
-const express = require('express');
 
-// Discord client setup
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-// OpenAI setup
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Conversation memory
+// Store conversations for each user
 const conversations = new Map();
 
 client.once('ready', () => {
@@ -23,7 +21,7 @@ client.once('ready', () => {
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
-  // Create conversation if new user
+  // Initialize conversation for new users
   if (!conversations.has(message.author.id)) {
     conversations.set(message.author.id, [
       {
@@ -34,21 +32,23 @@ client.on('messageCreate', async (message) => {
   }
 
   const conversationHistory = conversations.get(message.author.id);
-
-  // Add user message
+  
+  // Add user's message to conversation history
   conversationHistory.push({
     role: "user",
     content: message.content
   });
 
-  // Trim conversation if too long
+  // Keep conversation history limited to prevent token overflow
   if (conversationHistory.length > 10) {
+    // Keep system message and trim old messages
     const systemMessage = conversationHistory[0];
     conversationHistory.splice(1, conversationHistory.length - 6);
     conversationHistory[0] = systemMessage;
   }
 
   try {
+    // Show typing indicator
     await message.channel.sendTyping();
 
     const response = await openai.chat.completions.create({
@@ -59,8 +59,8 @@ client.on('messageCreate', async (message) => {
     });
 
     const reply = response.choices[0].message.content;
-
-    // Add assistant reply
+    
+    // Add AI's response to conversation history
     conversationHistory.push({
       role: "assistant",
       content: reply
@@ -75,7 +75,14 @@ client.on('messageCreate', async (message) => {
 
 client.login(process.env.DISCORD_TOKEN);
 
-// Optional: Web server for uptime check (Render/Railway ping)
+// Keep the web server running
+const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot is running!'));
-app.listen(3000, () => console.log('Web server running on port 3000'));
+app.listen(3000, '0.0.0.0', () => console.log('Web server running on port 3000'));
+
+// Ping the server to keep it alive
+setInterval(() => {
+  fetch('https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co')
+    .catch(err => console.error('Error pinging server:', err));
+}, 4 * 60 * 1000); // Ping every 4 minutes
