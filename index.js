@@ -80,9 +80,3 @@ const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot is running!'));
 app.listen(3000, '0.0.0.0', () => console.log('Web server running on port 3000'));
-
-// Ping the server to keep it alive
-setInterval(() => {
-  fetch('https://' + process.env.REPL_SLUG + '.' + process.env.REPL_OWNER + '.repl.co')
-    .catch(err => console.error('Error pinging server:', err));
-}, 4 * 60 * 1000); // Ping every 4 minutes
