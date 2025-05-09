@@ -3,6 +3,12 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const OpenAI = require('openai');
 const express = require('express');
 
+// Validate environment variables
+if (!process.env.OPENAI_API_KEY || !process.env.DISCORD_TOKEN) {
+  console.error("Missing required environment variables: OPENAI_API_KEY or DISCORD_TOKEN");
+  process.exit(1);
+}
+
 // Discord client setup
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
@@ -41,11 +47,11 @@ client.on('messageCreate', async (message) => {
     content: message.content
   });
 
-  // Trim conversation if too long
+  // Trim conversation history
   if (conversationHistory.length > 10) {
-    const systemMessage = conversationHistory[0];
-    conversationHistory.splice(1, conversationHistory.length - 6);
-    conversationHistory[0] = systemMessage;
+    const systemMessage = conversationHistory.shift(); // Keep the system message
+    conversationHistory.splice(0, conversationHistory.length - 9); // Keep the last 9 messages
+    conversationHistory.unshift(systemMessage); // Add the system message back
   }
 
   try {
@@ -68,14 +74,18 @@ client.on('messageCreate', async (message) => {
 
     await message.reply(reply);
   } catch (error) {
-    console.error('OpenAI API Error:', error);
-    await message.reply("I encountered an error processing your message. Please try again.");
+    console.error('OpenAI API Error:', error.response?.data || error.message);
+    await message.reply("I encountered an error processing your message. Please try again later.");
   }
 });
 
-client.login(process.env.DISCORD_TOKEN);
+client.on('error', (error) => console.error('Discord Client Error:', error));
 
 // Optional: Web server for uptime check (Render/Railway ping)
 const app = express();
-app.get('/', (req, res) => res.send('Bot is running!'));
-app.listen(3000, () => console.log('Web server running on port 3000'));
+app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Web server running on port ${PORT}`));
+
+// Login to Discord
+client.login(process.env.DISCORD_TOKEN);
