@@ -1,18 +1,28 @@
 {
-  "name": "discord-openai-bot",
+  "name": "discord-openai-chatbot",
   "version": "1.0.0",
-  "description": "Discord bot using OpenAI and Discord.js",
+  "description": "A Discord chatbot using OpenAI and Discord.js with Express health check.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.0.2",
+    "openai": "^4.30.1"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {
-    "discord.js": "^14.0.0",
-    "dotenv": "^16.0.0",
-    "express": "^4.18.0",
-    "openai": "^4.0.0"
-  }
+  "keywords": [
+    "discord",
+    "openai",
+    "chatbot",
+    "gpt",
+    "ai"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
 }
